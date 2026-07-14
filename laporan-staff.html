@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laporan Pengajuan Staff</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --green-900:#0B3D2A;
+    --green-800:#0F4D34;
+    --green-700:#146C43;
+    --green-600:#1E8455;
+    --green-500:#2F9E63;
+    --green-100:#E3F1E8;
+    --green-050:#F2F7F3;
+    --paper:#F6F7F2;
+    --ink:#16241C;
+    --muted:#5C6B61;
+    --border:#D7E3D9;
+    --radius:12px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    line-height:1.5;
+    padding:40px 16px 80px;
+  }
+  .wrap{max-width:1000px;margin:0 auto;}
+  .brand{display:flex;align-items:center;gap:12px;margin-bottom:24px;}
+  .brand svg{flex-shrink:0;}
+  .brand h1{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:22px;
+    margin:0;
+    color:var(--green-900);
+    letter-spacing:-0.01em;
+  }
+  .brand p{margin:2px 0 0;font-size:13px;color:var(--muted);}
+
+  .card{
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:20px 24px;
+    margin-bottom:16px;
+  }
+
+  .filter-row{
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+    align-items:flex-end;
+  }
+  .filter-field{flex:1;min-width:140px;}
+  .filter-field label{
+    display:block;
+    font-size:11px;
+    font-weight:600;
+    letter-spacing:0.04em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:6px;
+  }
+  select{
+    width:100%;
+    padding:10px 12px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+    color:var(--ink);
+    background:#fff;
+  }
+  select:focus{outline:none;border-color:var(--green-600);box-shadow:0 0 0 3px var(--green-100);}
+
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;}
+  .chip{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:10px 14px;
+    border:1px solid var(--border);
+    border-radius:10px;
+    background:#fff;
+    cursor:pointer;
+    font-size:13px;
+    font-weight:500;
+    color:var(--ink);
+    transition:border-color .15s, background .15s, color .15s;
+  }
+  .chip .count{
+    font-size:11px;
+    font-weight:600;
+    background:var(--green-100);
+    color:var(--green-800);
+    padding:1px 7px;
+    border-radius:999px;
+  }
+  .chip.active{background:var(--green-700);border-color:var(--green-700);color:#fff;}
+  .chip.active .count{background:rgba(255,255,255,0.25);color:#fff;}
+  .chip:hover{border-color:var(--green-500);}
+
+  .table-wrap{
+    max-height:520px;
+    overflow:auto;
+    border:1px solid var(--border);
+    border-radius:12px;
+  }
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  thead th{
+    position:sticky;
+    top:0;
+    background:var(--green-700);
+    color:#fff;
+    text-align:left;
+    padding:11px 14px;
+    font-weight:600;
+    white-space:nowrap;
+    z-index:1;
+  }
+  tbody td{
+    padding:10px 14px;
+    border-bottom:1px solid var(--border);
+    white-space:nowrap;
+  }
+  tbody td.wrap-text{white-space:normal;min-width:200px;}
+  tbody tr:hover{background:var(--green-050);}
+  tbody tr:last-child td{border-bottom:none;}
+
+  .empty-state{
+    padding:40px 20px;
+    text-align:center;
+    color:var(--muted);
+    font-size:13px;
+  }
+  .loading-state{
+    padding:40px 20px;
+    text-align:center;
+    color:var(--muted);
+    font-size:13px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="brand">
+    <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+      <circle cx="17" cy="17" r="17" fill="#0F4D34"/>
+      <path d="M10 20c0-6 4-10 10-10 0 6-4 10-10 10z" fill="#2F9E63"/>
+      <path d="M10 20V24" stroke="#E3F1E8" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    <div>
+      <h1>Laporan pengajuan staff</h1>
+      <p>Rekap izin, sakit, tukar shift, cuti, dan keterlambatan</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="filter-row">
+      <div class="filter-field">
+        <label for="filterTahun">Tahun</label>
+        <select id="filterTahun"><option value="">Semua tahun</option></select>
+      </div>
+      <div class="filter-field">
+        <label for="filterBulan">Bulan</label>
+        <select id="filterBulan"><option value="">Semua bulan</option></select>
+      </div>
+    </div>
+
+    <div class="chips" id="kategoriChips">
+      <div class="chip active" data-kategori="Izin">Izin <span class="count" id="count-Izin">0</span></div>
+      <div class="chip" data-kategori="Sakit">Sakit <span class="count" id="count-Sakit">0</span></div>
+      <div class="chip" data-kategori="Tukar Shift">Tukar shift <span class="count" id="count-Tukar Shift">0</span></div>
+      <div class="chip" data-kategori="Cuti Tahunan">Cuti tahunan <span class="count" id="count-Cuti Tahunan">0</span></div>
+      <div class="chip" data-kategori="Telat/Pulang Cepat">Telat/pulang cepat <span class="count" id="count-Telat/Pulang Cepat">0</span></div>
+    </div>
+  </div>
+
+  <div class="card" style="padding:0;overflow:hidden;">
+    <div class="table-wrap" id="tableWrap">
+      <div class="loading-state" id="tableContent">Memuat data...</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ==== KONFIGURASI ====
+const APPS_SCRIPT_URL = "GANTI_DENGAN_URL_WEB_APP_ANDA";
+
+const BULAN_LIST = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+
+let pengajuanData = [];   // dari sheet "Pengajuan" (izin/sakit/cuti/telat)
+let tukarShiftData = [];  // dari sheet "Tukar Shift"
+let currentKategori = "Izin";
+
+// ==== MUAT DATA ====
+async function loadData(){
+  try {
+    const [resPengajuan, resTukarShift] = await Promise.all([
+      fetch(`${APPS_SCRIPT_URL}?action=listPengajuan`),
+      fetch(APPS_SCRIPT_URL) // default (tanpa action) -> data Tukar Shift Petugas
+    ]);
+
+    pengajuanData = await resPengajuan.json();
+    const tukarShiftRes = await resTukarShift.json();
+    tukarShiftData = (tukarShiftRes && tukarShiftRes.data) ? tukarShiftRes.data : [];
+
+    if (!Array.isArray(pengajuanData)) pengajuanData = [];
+
+    populateFilterTahun();
+    updateCounts();
+    renderTable();
+  } catch (err){
+    document.getElementById("tableContent").innerHTML =
+      `<div class="empty-state">Gagal memuat data. Periksa koneksi atau URL Apps Script.</div>`;
+    console.error(err);
+  }
+}
+
+function populateFilterTahun(){
+  const tahunSet = new Set();
+
+  pengajuanData.forEach(row => {
+    const d = parseDate(row["Tanggal Mulai"]);
+    if (d) tahunSet.add(d.getFullYear());
+  });
+  tukarShiftData.forEach(row => {
+    if (row["Tahun"]) tahunSet.add(Number(row["Tahun"]));
+  });
+
+  const select = document.getElementById("filterTahun");
+  Array.from(tahunSet).sort((a,b) => b - a).forEach(tahun => {
+    const opt = document.createElement("option");
+    opt.value = tahun;
+    opt.textContent = tahun;
+    select.appendChild(opt);
+  });
+
+  const bulanSelect = document.getElementById("filterBulan");
+  BULAN_LIST.forEach(bulan => {
+    const opt = document.createElement("option");
+    opt.value = bulan;
+    opt.textContent = bulan;
+    bulanSelect.appendChild(opt);
+  });
+}
+
+function parseDate(value){
+  if (!value) return null;
+  const d = new Date(value);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+// ==== FILTER DATA SESUAI TAHUN/BULAN YANG DIPILIH ====
+function getFilteredPengajuan(kategori){
+  const tahun = document.getElementById("filterTahun").value;
+  const bulan = document.getElementById("filterBulan").value;
+
+  return pengajuanData.filter(row => {
+    if (row["Jenis Formulir"] !== kategori) return false;
+
+    const d = parseDate(row["Tanggal Mulai"]);
+    if (tahun && (!d || d.getFullYear().toString() !== tahun)) return false;
+    if (bulan && (!d || BULAN_LIST[d.getMonth()] !== bulan)) return false;
+
+    return true;
+  });
+}
+
+function getFilteredTukarShift(){
+  const tahun = document.getElementById("filterTahun").value;
+  const bulan = document.getElementById("filterBulan").value;
+
+  return tukarShiftData.filter(row => {
+    if (tahun && String(row["Tahun"]) !== tahun) return false;
+    if (bulan && row["Bulan"] !== bulan) return false;
+    return true;
+  });
+}
+
+// ==== HITUNG JUMLAH PER KATEGORI (badge di chip) ====
+function updateCounts(){
+  ["Izin","Sakit","Cuti Tahunan","Telat/Pulang Cepat"].forEach(kategori => {
+    document.getElementById(`count-${kategori}`).textContent = getFilteredPengajuan(kategori).length;
+  });
+  document.getElementById("count-Tukar Shift").textContent = getFilteredTukarShift().length;
+}
+
+// ==== RENDER TABEL SESUAI KATEGORI AKTIF ====
+function renderTable(){
+  const container = document.getElementById("tableContent");
+
+  if (currentKategori === "Tukar Shift"){
+    renderTukarShiftTable(container);
+  } else {
+    renderPengajuanTable(container, currentKategori);
+  }
+}
+
+function renderPengajuanTable(container, kategori){
+  const rows = getFilteredPengajuan(kategori);
+
+  if (rows.length === 0){
+    container.innerHTML = `<div class="empty-state">Tidak ada data ${kategori.toLowerCase()} untuk filter ini.</div>`;
+    return;
+  }
+
+  const isTelat = kategori === "Telat/Pulang Cepat";
+
+  let html = `<table><thead><tr>
+    <th>Nama</th><th>NIP</th>`;
+
+  if (isTelat){
+    html += `<th>Tanggal</th><th>Jenis</th><th>Jam</th><th>Keterangan</th>`;
+  } else {
+    html += `<th>Tanggal Mulai</th><th>Tanggal Selesai</th><th>Keterangan</th>`;
+  }
+  html += `</tr></thead><tbody>`;
+
+  rows
+    .sort((a,b) => new Date(b["Timestamp"]) - new Date(a["Timestamp"]))
+    .forEach(row => {
+      html += `<tr>
+        <td>${row["Nama"] || "-"}</td>
+        <td>${row["NIP"] || "-"}</td>`;
+      if (isTelat){
+        html += `
+          <td>${row["Tanggal Mulai"] || "-"}</td>
+          <td>${row["Jenis (Telat/Pulang Cepat)"] === "telat" ? "Telat" : "Pulang cepat"}</td>
+          <td>${row["Jam"] || "-"}</td>
+          <td class="wrap-text">${row["Keterangan"] || "-"}</td>`;
+      } else {
+        html += `
+          <td>${row["Tanggal Mulai"] || "-"}</td>
+          <td>${row["Tanggal Selesai"] || "-"}</td>
+          <td class="wrap-text">${row["Keterangan"] || "-"}</td>`;
+      }
+      html += `</tr>`;
+    });
+
+  html += `</tbody></table>`;
+  container.innerHTML = html;
+}
+
+function renderTukarShiftTable(container){
+  const rows = getFilteredTukarShift();
+
+  if (rows.length === 0){
+    container.innerHTML = `<div class="empty-state">Tidak ada data tukar shift untuk filter ini.</div>`;
+    return;
+  }
+
+  let html = `<table><thead><tr>
+    <th>Nama Pemohon</th>
+    <th>Depo</th>
+    <th>Tanggal Ganti Shift</th>
+    <th>Shift</th>
+    <th>Nama Pengganti</th>
+    <th>Shift Pengganti</th>
+  </tr></thead><tbody>`;
+
+  rows
+    .sort((a,b) => new Date(b["Submitted at"]) - new Date(a["Submitted at"]))
+    .forEach(row => {
+      html += `<tr>
+        <td>${row["Nama staff yang tukar shiff"] || "-"}</td>
+        <td>${row["Depo"] || "-"}</td>
+        <td>${row["Tanggal ganti shift"] || "-"}</td>
+        <td>${row["Shift Lama"] || "-"} &rarr; ${row["Shift Baru"] || "-"}</td>
+        <td>${row["Nama Staff pengganti"] || "-"}</td>
+        <td>${row["Shiff lama (P)"] || "-"} &rarr; ${row["Shiff baru(P)"] || "-"}</td>
+      </tr>`;
+    });
+
+  html += `</tbody></table>`;
+  container.innerHTML = html;
+}
+
+// ==== EVENT LISTENERS ====
+document.querySelectorAll(".chip").forEach(chip => {
+  chip.addEventListener("click", () => {
+    document.querySelectorAll(".chip").forEach(c => c.classList.remove("active"));
+    chip.classList.add("active");
+    currentKategori = chip.dataset.kategori;
+    renderTable();
+  });
+});
+
+document.getElementById("filterTahun").addEventListener("change", () => {
+  updateCounts();
+  renderTable();
+});
+document.getElementById("filterBulan").addEventListener("change", () => {
+  updateCounts();
+  renderTable();
+});
+
+loadData();
+</script>
+</body>
+</html>
