@@ -107,6 +107,33 @@
   .chip.active .count{background:rgba(255,255,255,0.25);color:#fff;}
   .chip:hover{border-color:var(--green-500);}
 
+  /* ==== WARNA PER KATEGORI, senada dengan portal pengajuan ==== */
+  .chip[data-kategori="Izin"]{background:#EAF1FE;border-color:#CBDCFB;}
+  .chip[data-kategori="Izin"] .count{background:#CBDCFB;color:#1D4ED8;}
+  .chip[data-kategori="Izin"].active{background:#2F6FED;border-color:#2F6FED;}
+
+  .chip[data-kategori="Sakit"]{background:#FCE7F3;border-color:#F6C6E0;}
+  .chip[data-kategori="Sakit"] .count{background:#F6C6E0;color:#BE185D;}
+  .chip[data-kategori="Sakit"].active{background:#DB2777;border-color:#DB2777;}
+
+  .chip[data-kategori="Tukar Shift"]{background:#EDE9FE;border-color:#D6CCFB;}
+  .chip[data-kategori="Tukar Shift"] .count{background:#D6CCFB;color:#6D28D9;}
+  .chip[data-kategori="Tukar Shift"].active{background:#7C3AED;border-color:#7C3AED;}
+
+  .chip[data-kategori="Cuti Tahunan"]{background:#FEF3C7;border-color:#FBE39A;}
+  .chip[data-kategori="Cuti Tahunan"] .count{background:#FBE39A;color:#B45309;}
+  .chip[data-kategori="Cuti Tahunan"].active{background:#D97706;border-color:#D97706;}
+
+  .chip[data-kategori="Telat/Pulang Cepat"]{background:#CFFAFE;border-color:#A5F0F7;}
+  .chip[data-kategori="Telat/Pulang Cepat"] .count{background:#A5F0F7;color:#0E7490;}
+  .chip[data-kategori="Telat/Pulang Cepat"].active{background:#0891B2;border-color:#0891B2;}
+
+  .chip[data-kategori="Absensi Eror"]{background:#FEE2E2;border-color:#FBC7C4;}
+  .chip[data-kategori="Absensi Eror"] .count{background:#FBC7C4;color:#B91C1C;}
+  .chip[data-kategori="Absensi Eror"].active{background:#DC2626;border-color:#DC2626;}
+
+  .chip.active .count{background:rgba(255,255,255,0.25) !important;color:#fff !important;}
+
   .table-wrap{
     max-height:520px;
     overflow:auto;
@@ -124,6 +151,14 @@
     font-weight:600;
     white-space:nowrap;
     z-index:1;
+  }
+  thead th.sortable{cursor:pointer;user-select:none;}
+  thead th.sortable:hover{background:var(--green-800);}
+  thead th.sortable .sort-icon{
+    display:inline-block;
+    margin-left:4px;
+    font-size:11px;
+    opacity:.8;
   }
   tbody td{
     padding:10px 14px;
@@ -159,7 +194,7 @@
     </svg>
     <div>
       <h1>Laporan pengajuan staff</h1>
-      <p>Rekap izin, sakit, tukar shift, cuti, dan keterlambatan</p>
+      <p>Rekap izin, sakit, tukar shift, cuti, keterlambatan, dan absensi eror</p>
     </div>
   </div>
 
@@ -181,6 +216,7 @@
       <div class="chip" data-kategori="Tukar Shift">Tukar shift <span class="count" id="count-Tukar Shift">0</span></div>
       <div class="chip" data-kategori="Cuti Tahunan">Cuti tahunan <span class="count" id="count-Cuti Tahunan">0</span></div>
       <div class="chip" data-kategori="Telat/Pulang Cepat">Telat/pulang cepat <span class="count" id="count-Telat/Pulang Cepat">0</span></div>
+      <div class="chip" data-kategori="Absensi Eror">Absensi eror <span class="count" id="count-Absensi Eror">0</span></div>
     </div>
   </div>
 
@@ -198,9 +234,10 @@ const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxFoa5--tqPOorg
 
 const BULAN_LIST = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
 
-let pengajuanData = [];   // dari sheet "Pengajuan" (izin/sakit/cuti/telat)
+let pengajuanData = [];   // dari sheet "Pengajuan" (izin/sakit/cuti/telat/absensi eror)
 let tukarShiftData = [];  // dari sheet "Tukar Shift"
 let currentKategori = "Izin";
+let depoSortDir = null;   // null (urutan asal) | "asc" | "desc"
 
 // ==== MUAT DATA ====
 async function loadData(){
@@ -230,7 +267,7 @@ function populateFilterTahun(){
   const tahunSet = new Set();
 
   pengajuanData.forEach(row => {
-    const d = parseDate(row["Tanggal Mulai"]);
+    const d = parseDate(row["Tanggal Mulai"] || row["Tanggal Absensi"]);
     if (d) tahunSet.add(d.getFullYear());
   });
   tukarShiftData.forEach(row => {
@@ -260,6 +297,12 @@ function parseDate(value){
   return isNaN(d.getTime()) ? null : d;
 }
 
+// Tanggal acuan untuk filter tahun/bulan, berbeda-beda per kategori
+function getTanggalAcuan(row){
+  if (row["Jenis Formulir"] === "Absensi Eror") return row["Tanggal Absensi"];
+  return row["Tanggal Mulai"];
+}
+
 // ==== FILTER DATA SESUAI TAHUN/BULAN YANG DIPILIH ====
 function getFilteredPengajuan(kategori){
   const tahun = document.getElementById("filterTahun").value;
@@ -268,7 +311,7 @@ function getFilteredPengajuan(kategori){
   return pengajuanData.filter(row => {
     if (row["Jenis Formulir"] !== kategori) return false;
 
-    const d = parseDate(row["Tanggal Mulai"]);
+    const d = parseDate(getTanggalAcuan(row));
     if (tahun && (!d || d.getFullYear().toString() !== tahun)) return false;
     if (bulan && (!d || BULAN_LIST[d.getMonth()] !== bulan)) return false;
 
@@ -280,16 +323,27 @@ function getFilteredTukarShift(){
   const tahun = document.getElementById("filterTahun").value;
   const bulan = document.getElementById("filterBulan").value;
 
-  return tukarShiftData.filter(row => {
+  let rows = tukarShiftData.filter(row => {
     if (tahun && String(row["Tahun"]) !== tahun) return false;
     if (bulan && row["Bulan"] !== bulan) return false;
     return true;
   });
+
+  if (depoSortDir){
+    rows = rows.slice().sort((a, b) => {
+      const depoA = String(a["Depo"] || "");
+      const depoB = String(b["Depo"] || "");
+      const cmp = depoA.localeCompare(depoB, "id");
+      return depoSortDir === "asc" ? cmp : -cmp;
+    });
+  }
+
+  return rows;
 }
 
 // ==== HITUNG JUMLAH PER KATEGORI (badge di chip) ====
 function updateCounts(){
-  ["Izin","Sakit","Cuti Tahunan","Telat/Pulang Cepat"].forEach(kategori => {
+  ["Izin","Sakit","Cuti Tahunan","Telat/Pulang Cepat","Absensi Eror"].forEach(kategori => {
     document.getElementById(`count-${kategori}`).textContent = getFilteredPengajuan(kategori).length;
   });
   document.getElementById("count-Tukar Shift").textContent = getFilteredTukarShift().length;
@@ -315,12 +369,15 @@ function renderPengajuanTable(container, kategori){
   }
 
   const isTelat = kategori === "Telat/Pulang Cepat";
+  const isAbsensiEror = kategori === "Absensi Eror";
 
   let html = `<table><thead><tr>
     <th>Nama</th><th>NIP</th>`;
 
   if (isTelat){
     html += `<th>Tanggal</th><th>Jenis</th><th>Jam</th><th>Keterangan</th>`;
+  } else if (isAbsensiEror){
+    html += `<th>Tanggal Absensi</th><th>Waktu Absensi</th><th>Kendala</th>`;
   } else {
     html += `<th>Tanggal Mulai</th><th>Tanggal Selesai</th><th>Keterangan</th>`;
   }
@@ -338,6 +395,11 @@ function renderPengajuanTable(container, kategori){
           <td>${row["Jenis (Telat/Pulang Cepat)"] === "telat" ? "Telat" : "Pulang cepat"}</td>
           <td>${row["Jam"] || "-"}</td>
           <td class="wrap-text">${row["Keterangan"] || "-"}</td>`;
+      } else if (isAbsensiEror){
+        html += `
+          <td>${row["Tanggal Absensi"] || "-"}</td>
+          <td>${row["Waktu Absensi (Masuk/Pulang)"] || "-"}</td>
+          <td class="wrap-text">${row["Keterangan"] || "-"}</td>`;
       } else {
         html += `
           <td>${row["Tanggal Mulai"] || "-"}</td>
@@ -351,6 +413,12 @@ function renderPengajuanTable(container, kategori){
   container.innerHTML = html;
 }
 
+function depoSortIcon(){
+  if (depoSortDir === "asc") return "&#9650;"; // ▲
+  if (depoSortDir === "desc") return "&#9660;"; // ▼
+  return "&#8645;"; // ⇅
+}
+
 function renderTukarShiftTable(container){
   const rows = getFilteredTukarShift();
 
@@ -361,16 +429,17 @@ function renderTukarShiftTable(container){
 
   let html = `<table><thead><tr>
     <th>Nama Pemohon</th>
-    <th>Depo</th>
+    <th class="sortable" id="depoHeader">Depo <span class="sort-icon">${depoSortIcon()}</span></th>
     <th>Tanggal Ganti Shift</th>
     <th>Shift</th>
     <th>Nama Pengganti</th>
     <th>Shift Pengganti</th>
   </tr></thead><tbody>`;
 
-  rows
-    .sort((a,b) => new Date(b["Submitted at"]) - new Date(a["Submitted at"]))
-    .forEach(row => {
+  // Kalau sedang diurutkan berdasarkan Depo, jangan urutkan ulang berdasarkan tanggal submit
+  const sortedRows = depoSortDir ? rows : rows.slice().sort((a,b) => new Date(b["Submitted at"]) - new Date(a["Submitted at"]));
+
+  sortedRows.forEach(row => {
       html += `<tr>
         <td>${row["Nama staff yang tukar shiff"] || "-"}</td>
         <td>${row["Depo"] || "-"}</td>
@@ -383,6 +452,17 @@ function renderTukarShiftTable(container){
 
   html += `</tbody></table>`;
   container.innerHTML = html;
+
+  const depoHeader = document.getElementById("depoHeader");
+  if (depoHeader){
+    depoHeader.addEventListener("click", () => {
+      // siklus: asal -> A-Z -> Z-A -> asal
+      if (depoSortDir === null) depoSortDir = "asc";
+      else if (depoSortDir === "asc") depoSortDir = "desc";
+      else depoSortDir = null;
+      renderTable();
+    });
+  }
 }
 
 // ==== EVENT LISTENERS ====
