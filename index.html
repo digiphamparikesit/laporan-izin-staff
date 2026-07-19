@@ -107,6 +107,33 @@
   .chip.active .count{background:rgba(255,255,255,0.25);color:#fff;}
   .chip:hover{border-color:var(--green-500);}
 
+  /* ==== WARNA PER KATEGORI, senada dengan portal pengajuan ==== */
+  .chip[data-kategori="Izin"]{background:#EAF1FE;border-color:#CBDCFB;}
+  .chip[data-kategori="Izin"] .count{background:#CBDCFB;color:#1D4ED8;}
+  .chip[data-kategori="Izin"].active{background:#2F6FED;border-color:#2F6FED;}
+
+  .chip[data-kategori="Sakit"]{background:#FCE7F3;border-color:#F6C6E0;}
+  .chip[data-kategori="Sakit"] .count{background:#F6C6E0;color:#BE185D;}
+  .chip[data-kategori="Sakit"].active{background:#DB2777;border-color:#DB2777;}
+
+  .chip[data-kategori="Tukar Shift"]{background:#EDE9FE;border-color:#D6CCFB;}
+  .chip[data-kategori="Tukar Shift"] .count{background:#D6CCFB;color:#6D28D9;}
+  .chip[data-kategori="Tukar Shift"].active{background:#7C3AED;border-color:#7C3AED;}
+
+  .chip[data-kategori="Cuti Tahunan"]{background:#FEF3C7;border-color:#FBE39A;}
+  .chip[data-kategori="Cuti Tahunan"] .count{background:#FBE39A;color:#B45309;}
+  .chip[data-kategori="Cuti Tahunan"].active{background:#D97706;border-color:#D97706;}
+
+  .chip[data-kategori="Telat/Pulang Cepat"]{background:#CFFAFE;border-color:#A5F0F7;}
+  .chip[data-kategori="Telat/Pulang Cepat"] .count{background:#A5F0F7;color:#0E7490;}
+  .chip[data-kategori="Telat/Pulang Cepat"].active{background:#0891B2;border-color:#0891B2;}
+
+  .chip[data-kategori="Absensi Eror"]{background:#FEE2E2;border-color:#FBC7C4;}
+  .chip[data-kategori="Absensi Eror"] .count{background:#FBC7C4;color:#B91C1C;}
+  .chip[data-kategori="Absensi Eror"].active{background:#DC2626;border-color:#DC2626;}
+
+  .chip.active .count{background:rgba(255,255,255,0.25) !important;color:#fff !important;}
+
   .table-wrap{
     max-height:520px;
     overflow:auto;
@@ -124,6 +151,14 @@
     font-weight:600;
     white-space:nowrap;
     z-index:1;
+  }
+  thead th.sortable{cursor:pointer;user-select:none;}
+  thead th.sortable:hover{background:var(--green-800);}
+  thead th.sortable .sort-icon{
+    display:inline-block;
+    margin-left:4px;
+    font-size:11px;
+    opacity:.8;
   }
   tbody td{
     padding:10px 14px;
@@ -146,6 +181,89 @@
     color:var(--muted);
     font-size:13px;
   }
+
+  td.nama-cell{
+    cursor:pointer;
+    font-weight:600;
+    color:var(--green-800);
+    text-decoration:underline;
+    text-decoration-color:transparent;
+    transition:text-decoration-color .15s;
+  }
+  td.nama-cell:hover{text-decoration-color:var(--green-600);}
+
+  /* ==== MODAL DETAIL ==== */
+  .modal-overlay{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(11,61,42,0.35);
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    z-index:100;
+  }
+  .modal-overlay.show{display:flex;}
+  .modal-box{
+    background:#fff;
+    border-radius:16px;
+    width:100%;
+    max-width:420px;
+    max-height:85vh;
+    overflow-y:auto;
+    padding:24px;
+    border-top:5px solid var(--green-700);
+    box-shadow:0 20px 50px rgba(11,61,42,0.25);
+  }
+  .modal-box.warna-izin{border-top-color:#2F6FED;}
+  .modal-box.warna-sakit{border-top-color:#DB2777;}
+  .modal-box.warna-cuti{border-top-color:#D97706;}
+  .modal-box.warna-telat{border-top-color:#0891B2;}
+  .modal-box.warna-absensieror{border-top-color:#DC2626;}
+  .modal-head{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:16px;
+  }
+  .modal-head h2{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:18px;
+    margin:0 0 3px;
+    color:var(--green-900);
+  }
+  .modal-head p{margin:0;font-size:12px;color:var(--muted);}
+  .modal-close{
+    flex-shrink:0;
+    width:28px;
+    height:28px;
+    border:none;
+    border-radius:8px;
+    background:var(--green-050);
+    color:var(--muted);
+    font-size:16px;
+    line-height:1;
+    cursor:pointer;
+  }
+  .modal-close:hover{background:var(--green-100);color:var(--green-900);}
+  .modal-row{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    padding:10px 0;
+    border-bottom:1px solid var(--border);
+  }
+  .modal-row:last-child{border-bottom:none;}
+  .modal-row .modal-label{
+    font-size:11px;
+    font-weight:600;
+    letter-spacing:0.04em;
+    text-transform:uppercase;
+    color:var(--muted);
+  }
+  .modal-row .modal-value{font-size:14px;color:var(--ink);white-space:pre-wrap;}
 </style>
 </head>
 <body>
@@ -159,7 +277,7 @@
     </svg>
     <div>
       <h1>Laporan pengajuan staff</h1>
-      <p>Rekap izin, sakit, tukar shift, cuti, dan keterlambatan</p>
+      <p>Rekap izin, sakit, tukar shift, cuti, keterlambatan, dan absensi eror</p>
     </div>
   </div>
 
@@ -181,6 +299,7 @@
       <div class="chip" data-kategori="Tukar Shift">Tukar shift <span class="count" id="count-Tukar Shift">0</span></div>
       <div class="chip" data-kategori="Cuti Tahunan">Cuti tahunan <span class="count" id="count-Cuti Tahunan">0</span></div>
       <div class="chip" data-kategori="Telat/Pulang Cepat">Telat/pulang cepat <span class="count" id="count-Telat/Pulang Cepat">0</span></div>
+      <div class="chip" data-kategori="Absensi Eror">Absensi eror <span class="count" id="count-Absensi Eror">0</span></div>
     </div>
   </div>
 
@@ -192,15 +311,29 @@
 
 </div>
 
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box" id="modalBox">
+    <div class="modal-head">
+      <div>
+        <h2 id="modalNama">-</h2>
+        <p id="modalSub">-</p>
+      </div>
+      <button class="modal-close" id="modalClose" aria-label="Tutup">&#10005;</button>
+    </div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
 <script>
 // ==== KONFIGURASI ====
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxFoa5--tqPOorgaXOz-TO27_SZR-wXndNR9oPDgc1NLjoVwKOQGBw4MmRM4sYmZ95Gpw/exec";
 
 const BULAN_LIST = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
 
-let pengajuanData = [];   // dari sheet "Pengajuan" (izin/sakit/cuti/telat)
+let pengajuanData = [];   // dari sheet "Pengajuan" (izin/sakit/cuti/telat/absensi eror)
 let tukarShiftData = [];  // dari sheet "Tukar Shift"
 let currentKategori = "Izin";
+let depoSortDir = null;   // null (urutan asal) | "asc" | "desc"
 
 // ==== MUAT DATA ====
 async function loadData(){
@@ -230,7 +363,7 @@ function populateFilterTahun(){
   const tahunSet = new Set();
 
   pengajuanData.forEach(row => {
-    const d = parseDate(row["Tanggal Mulai"]);
+    const d = parseDate(row["Tanggal Mulai"] || row["Tanggal Absensi"]);
     if (d) tahunSet.add(d.getFullYear());
   });
   tukarShiftData.forEach(row => {
@@ -260,6 +393,12 @@ function parseDate(value){
   return isNaN(d.getTime()) ? null : d;
 }
 
+// Tanggal acuan untuk filter tahun/bulan, berbeda-beda per kategori
+function getTanggalAcuan(row){
+  if (row["Jenis Formulir"] === "Absensi Eror") return row["Tanggal Absensi"];
+  return row["Tanggal Mulai"];
+}
+
 // ==== FILTER DATA SESUAI TAHUN/BULAN YANG DIPILIH ====
 function getFilteredPengajuan(kategori){
   const tahun = document.getElementById("filterTahun").value;
@@ -268,7 +407,7 @@ function getFilteredPengajuan(kategori){
   return pengajuanData.filter(row => {
     if (row["Jenis Formulir"] !== kategori) return false;
 
-    const d = parseDate(row["Tanggal Mulai"]);
+    const d = parseDate(getTanggalAcuan(row));
     if (tahun && (!d || d.getFullYear().toString() !== tahun)) return false;
     if (bulan && (!d || BULAN_LIST[d.getMonth()] !== bulan)) return false;
 
@@ -280,16 +419,27 @@ function getFilteredTukarShift(){
   const tahun = document.getElementById("filterTahun").value;
   const bulan = document.getElementById("filterBulan").value;
 
-  return tukarShiftData.filter(row => {
+  let rows = tukarShiftData.filter(row => {
     if (tahun && String(row["Tahun"]) !== tahun) return false;
     if (bulan && row["Bulan"] !== bulan) return false;
     return true;
   });
+
+  if (depoSortDir){
+    rows = rows.slice().sort((a, b) => {
+      const depoA = String(a["Depo"] || "");
+      const depoB = String(b["Depo"] || "");
+      const cmp = depoA.localeCompare(depoB, "id");
+      return depoSortDir === "asc" ? cmp : -cmp;
+    });
+  }
+
+  return rows;
 }
 
 // ==== HITUNG JUMLAH PER KATEGORI (badge di chip) ====
 function updateCounts(){
-  ["Izin","Sakit","Cuti Tahunan","Telat/Pulang Cepat"].forEach(kategori => {
+  ["Izin","Sakit","Cuti Tahunan","Telat/Pulang Cepat","Absensi Eror"].forEach(kategori => {
     document.getElementById(`count-${kategori}`).textContent = getFilteredPengajuan(kategori).length;
   });
   document.getElementById("count-Tukar Shift").textContent = getFilteredTukarShift().length;
@@ -315,28 +465,36 @@ function renderPengajuanTable(container, kategori){
   }
 
   const isTelat = kategori === "Telat/Pulang Cepat";
+  const isAbsensiEror = kategori === "Absensi Eror";
 
   let html = `<table><thead><tr>
     <th>Nama</th><th>NIP</th>`;
 
   if (isTelat){
     html += `<th>Tanggal</th><th>Jenis</th><th>Jam</th><th>Keterangan</th>`;
+  } else if (isAbsensiEror){
+    html += `<th>Tanggal Absensi</th><th>Waktu Absensi</th><th>Kendala</th>`;
   } else {
     html += `<th>Tanggal Mulai</th><th>Tanggal Selesai</th><th>Keterangan</th>`;
   }
   html += `</tr></thead><tbody>`;
 
-  rows
-    .sort((a,b) => new Date(b["Timestamp"]) - new Date(a["Timestamp"]))
-    .forEach(row => {
+  const sortedRows = rows.sort((a,b) => new Date(b["Timestamp"]) - new Date(a["Timestamp"]));
+
+  sortedRows.forEach((row, i) => {
       html += `<tr>
-        <td>${row["Nama"] || "-"}</td>
+        <td class="nama-cell" data-row-index="${i}">${row["Nama"] || "-"}</td>
         <td>${row["NIP"] || "-"}</td>`;
       if (isTelat){
         html += `
           <td>${row["Tanggal Mulai"] || "-"}</td>
           <td>${row["Jenis (Telat/Pulang Cepat)"] === "telat" ? "Telat" : "Pulang cepat"}</td>
           <td>${row["Jam"] || "-"}</td>
+          <td class="wrap-text">${row["Keterangan"] || "-"}</td>`;
+      } else if (isAbsensiEror){
+        html += `
+          <td>${row["Tanggal Absensi"] || "-"}</td>
+          <td>${row["Waktu Absensi (Masuk/Pulang)"] || "-"}</td>
           <td class="wrap-text">${row["Keterangan"] || "-"}</td>`;
       } else {
         html += `
@@ -349,6 +507,84 @@ function renderPengajuanTable(container, kategori){
 
   html += `</tbody></table>`;
   container.innerHTML = html;
+
+  container.querySelectorAll(".nama-cell").forEach(cell => {
+    cell.addEventListener("click", () => {
+      const row = sortedRows[Number(cell.dataset.rowIndex)];
+      showDetailModal(row, kategori);
+    });
+  });
+}
+
+// ==== MODAL DETAIL STAFF ====
+const KATEGORI_WARNA_CLASS = {
+  "Izin": "warna-izin",
+  "Sakit": "warna-sakit",
+  "Cuti Tahunan": "warna-cuti",
+  "Telat/Pulang Cepat": "warna-telat",
+  "Absensi Eror": "warna-absensieror"
+};
+
+function formatTimestamp(value){
+  const d = parseDate(value);
+  if (!d) return "-";
+  return d.toLocaleString("id-ID", { day:"numeric", month:"long", year:"numeric", hour:"2-digit", minute:"2-digit" });
+}
+
+function showDetailModal(row, kategori){
+  const modalBox = document.getElementById("modalBox");
+  const body = document.getElementById("modalBody");
+
+  document.getElementById("modalNama").textContent = row["Nama"] || "-";
+  document.getElementById("modalSub").textContent = `${kategori} · NIP ${row["NIP"] || "-"}`;
+
+  modalBox.className = "modal-box " + (KATEGORI_WARNA_CLASS[kategori] || "");
+
+  let rowsHtml = "";
+  const addRow = (label, value) => {
+    rowsHtml += `<div class="modal-row"><span class="modal-label">${label}</span><span class="modal-value">${value || "-"}</span></div>`;
+  };
+
+  addRow("NIP", row["NIP"]);
+  addRow("Nama", row["Nama"]);
+
+  if (kategori === "Telat/Pulang Cepat"){
+    addRow("Tanggal", row["Tanggal Mulai"]);
+    addRow("Jenis", row["Jenis (Telat/Pulang Cepat)"] === "telat" ? "Telat" : "Pulang cepat");
+    addRow("Jam", row["Jam"]);
+    addRow("Alasan", row["Keterangan"]);
+  } else if (kategori === "Absensi Eror"){
+    addRow("Tanggal Absensi", row["Tanggal Absensi"]);
+    addRow("Waktu Absensi", row["Waktu Absensi (Masuk/Pulang)"]);
+    addRow("Kendala", row["Keterangan"]);
+  } else {
+    addRow("Tanggal Mulai", row["Tanggal Mulai"]);
+    addRow("Tanggal Selesai", row["Tanggal Selesai"]);
+    addRow("Keterangan", row["Keterangan"]);
+  }
+
+  addRow("Dikirim pada", formatTimestamp(row["Timestamp"]));
+
+  body.innerHTML = rowsHtml;
+  document.getElementById("modalOverlay").classList.add("show");
+}
+
+function closeDetailModal(){
+  document.getElementById("modalOverlay").classList.remove("show");
+}
+
+document.getElementById("modalClose").addEventListener("click", closeDetailModal);
+document.getElementById("modalOverlay").addEventListener("click", (e) => {
+  if (e.target.id === "modalOverlay") closeDetailModal();
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeDetailModal();
+});
+
+function depoSortIcon(){
+  if (depoSortDir === "asc") return "&#9650;"; // ▲
+  if (depoSortDir === "desc") return "&#9660;"; // ▼
+  return "&#8645;"; // ⇅
 }
 
 function renderTukarShiftTable(container){
@@ -361,16 +597,17 @@ function renderTukarShiftTable(container){
 
   let html = `<table><thead><tr>
     <th>Nama Pemohon</th>
-    <th>Depo</th>
+    <th class="sortable" id="depoHeader">Depo <span class="sort-icon">${depoSortIcon()}</span></th>
     <th>Tanggal Ganti Shift</th>
     <th>Shift</th>
     <th>Nama Pengganti</th>
     <th>Shift Pengganti</th>
   </tr></thead><tbody>`;
 
-  rows
-    .sort((a,b) => new Date(b["Submitted at"]) - new Date(a["Submitted at"]))
-    .forEach(row => {
+  // Kalau sedang diurutkan berdasarkan Depo, jangan urutkan ulang berdasarkan tanggal submit
+  const sortedRows = depoSortDir ? rows : rows.slice().sort((a,b) => new Date(b["Submitted at"]) - new Date(a["Submitted at"]));
+
+  sortedRows.forEach(row => {
       html += `<tr>
         <td>${row["Nama staff yang tukar shiff"] || "-"}</td>
         <td>${row["Depo"] || "-"}</td>
@@ -383,6 +620,17 @@ function renderTukarShiftTable(container){
 
   html += `</tbody></table>`;
   container.innerHTML = html;
+
+  const depoHeader = document.getElementById("depoHeader");
+  if (depoHeader){
+    depoHeader.addEventListener("click", () => {
+      // siklus: asal -> A-Z -> Z-A -> asal
+      if (depoSortDir === null) depoSortDir = "asc";
+      else if (depoSortDir === "asc") depoSortDir = "desc";
+      else depoSortDir = null;
+      renderTable();
+    });
+  }
 }
 
 // ==== EVENT LISTENERS ====
