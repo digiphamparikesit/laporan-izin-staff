@@ -217,6 +217,7 @@
   }
   .modal-box.warna-izin{border-top-color:#2F6FED;}
   .modal-box.warna-sakit{border-top-color:#DB2777;}
+  .modal-box.warna-tukarshift{border-top-color:#7C3AED;}
   .modal-box.warna-cuti{border-top-color:#D97706;}
   .modal-box.warna-telat{border-top-color:#0891B2;}
   .modal-box.warna-absensieror{border-top-color:#DC2626;}
@@ -573,6 +574,33 @@ function closeDetailModal(){
   document.getElementById("modalOverlay").classList.remove("show");
 }
 
+function showTukarShiftModal(row){
+  const modalBox = document.getElementById("modalBox");
+  const body = document.getElementById("modalBody");
+
+  document.getElementById("modalNama").textContent = row["Nama staff yang tukar shiff"] || "-";
+  document.getElementById("modalSub").textContent = `Tukar Shift · ${row["Depo"] || "-"}`;
+
+  modalBox.className = "modal-box warna-tukarshift";
+
+  let rowsHtml = "";
+  const addRow = (label, value) => {
+    rowsHtml += `<div class="modal-row"><span class="modal-label">${label}</span><span class="modal-value">${value || "-"}</span></div>`;
+  };
+
+  addRow("Nama Pemohon", row["Nama staff yang tukar shiff"]);
+  addRow("Depo", row["Depo"]);
+  addRow("Tahun / Bulan", `${row["Tahun"] || "-"} / ${row["Bulan"] || "-"}`);
+  addRow("Tanggal Ganti Shift", row["Tanggal ganti shift"]);
+  addRow("Shift Lama → Baru", `${row["Shift Lama"] || "-"} → ${row["Shift Baru"] || "-"}`);
+  addRow("Nama Staff Pengganti", row["Nama Staff pengganti"]);
+  addRow("Shift Pengganti (Lama → Baru)", `${row["Shiff lama (P)"] || "-"} → ${row["Shiff baru(P)"] || "-"}`);
+  addRow("Dikirim pada", formatTimestamp(row["Submitted at"]));
+
+  body.innerHTML = rowsHtml;
+  document.getElementById("modalOverlay").classList.add("show");
+}
+
 document.getElementById("modalClose").addEventListener("click", closeDetailModal);
 document.getElementById("modalOverlay").addEventListener("click", (e) => {
   if (e.target.id === "modalOverlay") closeDetailModal();
@@ -607,9 +635,9 @@ function renderTukarShiftTable(container){
   // Kalau sedang diurutkan berdasarkan Depo, jangan urutkan ulang berdasarkan tanggal submit
   const sortedRows = depoSortDir ? rows : rows.slice().sort((a,b) => new Date(b["Submitted at"]) - new Date(a["Submitted at"]));
 
-  sortedRows.forEach(row => {
+  sortedRows.forEach((row, i) => {
       html += `<tr>
-        <td>${row["Nama staff yang tukar shiff"] || "-"}</td>
+        <td class="nama-cell" data-row-index="${i}">${row["Nama staff yang tukar shiff"] || "-"}</td>
         <td>${row["Depo"] || "-"}</td>
         <td>${row["Tanggal ganti shift"] || "-"}</td>
         <td>${row["Shift Lama"] || "-"} &rarr; ${row["Shift Baru"] || "-"}</td>
@@ -620,6 +648,13 @@ function renderTukarShiftTable(container){
 
   html += `</tbody></table>`;
   container.innerHTML = html;
+
+  container.querySelectorAll(".nama-cell").forEach(cell => {
+    cell.addEventListener("click", () => {
+      const row = sortedRows[Number(cell.dataset.rowIndex)];
+      showTukarShiftModal(row);
+    });
+  });
 
   const depoHeader = document.getElementById("depoHeader");
   if (depoHeader){
