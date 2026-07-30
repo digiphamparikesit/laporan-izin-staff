@@ -68,7 +68,7 @@
     color:var(--muted);
     margin-bottom:6px;
   }
-  select{
+  select, input[type=text]{
     width:100%;
     padding:10px 12px;
     border:1px solid var(--border);
@@ -78,7 +78,7 @@
     color:var(--ink);
     background:#fff;
   }
-  select:focus{outline:none;border-color:var(--green-600);box-shadow:0 0 0 3px var(--green-100);}
+  select:focus, input[type=text]:focus{outline:none;border-color:var(--green-600);box-shadow:0 0 0 3px var(--green-100);}
 
   .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;}
   .chip{
@@ -280,6 +280,10 @@
 
   <div class="card">
     <div class="filter-row">
+      <div class="filter-field" style="flex:1.4;min-width:200px;">
+        <label for="filterNama">Cari nama staff</label>
+        <input type="text" id="filterNama" placeholder="Ketik nama pemohon..." autocomplete="off">
+      </div>
       <div class="filter-field">
         <label for="filterTahun">Tahun</label>
         <select id="filterTahun"><option value="">Semua tahun</option></select>
@@ -330,7 +334,8 @@ const BULAN_LIST = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Ag
 let pengajuanData = [];   // dari sheet "Pengajuan" (izin/sakit/cuti/telat/absensi eror)
 let tukarShiftData = [];  // dari sheet "Tukar Shift"
 let currentKategori = "Izin";
-let depoSortDir = null;   // null (urutan asal) | "asc" | "desc"
+let tsSortColumn = null;  // null | "depo" | "tanggal"
+let tsSortDir = null;     // null | "asc" | "desc"
 
 // ==== MUAT DATA ====
 async function loadData(){
@@ -357,23 +362,15 @@ async function loadData(){
 }
 
 function populateFilterTahun(){
-  const tahunSet = new Set();
-
-  pengajuanData.forEach(row => {
-    const d = parseDate(row["Tanggal Mulai"] || row["Tanggal Absensi"]);
-    if (d) tahunSet.add(d.getFullYear());
-  });
-  tukarShiftData.forEach(row => {
-    if (row["Tahun"]) tahunSet.add(Number(row["Tahun"]));
-  });
-
   const select = document.getElementById("filterTahun");
-  Array.from(tahunSet).sort((a,b) => b - a).forEach(tahun => {
+  // Rentang tahun tetap 2024-2030 (bukan hanya tahun yang sudah ada datanya),
+  // supaya bisa dipakai untuk filter tahun berjalan/mendatang juga.
+  for (let tahun = 2030; tahun >= 2024; tahun--){
     const opt = document.createElement("option");
     opt.value = tahun;
     opt.textContent = tahun;
     select.appendChild(opt);
-  });
+  }
 
   const bulanSelect = document.getElementById("filterBulan");
   BULAN_LIST.forEach(bulan => {
@@ -396,10 +393,11 @@ function getTanggalAcuan(row){
   return row["Tanggal Mulai"];
 }
 
-// ==== FILTER DATA SESUAI TAHUN/BULAN YANG DIPILIH ====
+// ==== FILTER DATA SESUAI TAHUN/BULAN/NAMA YANG DIPILIH ====
 function getFilteredPengajuan(kategori){
   const tahun = document.getElementById("filterTahun").value;
   const bulan = document.getElementById("filterBulan").value;
+  const nama = document.getElementById("filterNama").value.trim().toLowerCase();
 
   return pengajuanData.filter(row => {
     if (row["Jenis Formulir"] !== kategori) return false;
@@ -407,6 +405,7 @@ function getFilteredPengajuan(kategori){
     const d = parseDate(getTanggalAcuan(row));
     if (tahun && (!d || d.getFullYear().toString() !== tahun)) return false;
     if (bulan && (!d || BULAN_LIST[d.getMonth()] !== bulan)) return false;
+    if (nama && !String(row["Nama"] || "").toLowerCase().includes(nama)) return false;
 
     return true;
   });
@@ -415,19 +414,29 @@ function getFilteredPengajuan(kategori){
 function getFilteredTukarShift(){
   const tahun = document.getElementById("filterTahun").value;
   const bulan = document.getElementById("filterBulan").value;
+  const nama = document.getElementById("filterNama").value.trim().toLowerCase();
 
   let rows = tukarShiftData.filter(row => {
     if (tahun && String(row["Tahun"]) !== tahun) return false;
     if (bulan && row["Bulan"] !== bulan) return false;
+    if (nama && !String(row["Nama staff yang tukar shiff"] || "").toLowerCase().includes(nama)) return false;
     return true;
   });
 
-  if (depoSortDir){
+  if (tsSortColumn === "depo"){
     rows = rows.slice().sort((a, b) => {
       const depoA = String(a["Depo"] || "");
       const depoB = String(b["Depo"] || "");
       const cmp = depoA.localeCompare(depoB, "id");
-      return depoSortDir === "asc" ? cmp : -cmp;
+      return tsSortDir === "asc" ? cmp : -cmp;
+    });
+  } else if (tsSortColumn === "tanggal"){
+    rows = rows.slice().sort((a, b) => {
+      const dA = parseDate(a["Tanggal ganti shift"]);
+      const dB = parseDate(b["Tanggal ganti shift"]);
+      const tA = dA ? dA.getTime() : 0;
+      const tB = dB ? dB.getTime() : 0;
+      return tsSortDir === "asc" ? tA - tB : tB - tA;
     });
   }
 
@@ -588,7 +597,7 @@ function showTukarShiftModal(row){
   addRow("Depo", row["Depo"]);
   addRow("Tahun / Bulan", `${row["Tahun"] || "-"} / ${row["Bulan"] || "-"}`);
   addRow("Tanggal Ganti Shift", row["Tanggal ganti shift"]);
-  addRow("Shift Lama → Baru", `${row["Shift Lama"] || "-"} → ${row["Shift Baru"] || "-"}`);
+  addRow("Shift Lama → Baru", `${shiftLamaValue(row) || "-"} → ${row["Shift Baru"] || "-"}`);
   addRow("Nama Staff Pengganti", row["Nama Staff pengganti"]);
   addRow("Shift Pengganti (Lama → Baru)", `${row["Shiff lama (P)"] || "-"} → ${row["Shiff baru(P)"] || "-"}`);
   addRow("Dikirim pada", formatTimestamp(row["Submitted at"]));
@@ -605,10 +614,21 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") closeDetailModal();
 });
 
-function depoSortIcon(){
-  if (depoSortDir === "asc") return "&#9650;"; // ▲
-  if (depoSortDir === "desc") return "&#9660;"; // ▼
-  return "&#8645;"; // ⇅
+function sortIcon(kolom){
+  if (tsSortColumn !== kolom) return "&#8645;"; // ⇅ (belum diurutkan)
+  if (tsSortDir === "asc") return "&#9650;"; // ▲
+  return "&#9660;"; // ▼
+}
+
+// Beberapa kemungkinan nama kolom "Shift Lama" pada sheet Tukar Shift, untuk
+// jaga-jaga kalau header di sheet aslinya sedikit berbeda dari yang diharapkan
+// kode ini (huruf besar/kecil, spasi, dsb) sehingga datanya tetap tampil.
+function shiftLamaValue(row){
+  const candidates = ["Shift Lama", "Shift lama", "SHIFT LAMA", "Shift Saat Ini", "Shift Awal"];
+  for (const key of candidates){
+    if (row[key] !== undefined && row[key] !== "") return row[key];
+  }
+  return "";
 }
 
 function renderTukarShiftTable(container){
@@ -621,22 +641,22 @@ function renderTukarShiftTable(container){
 
   let html = `<table><thead><tr>
     <th>Nama Pemohon</th>
-    <th class="sortable" id="depoHeader">Depo <span class="sort-icon">${depoSortIcon()}</span></th>
-    <th>Tanggal Ganti Shift</th>
+    <th class="sortable" id="depoHeader">Depo <span class="sort-icon">${sortIcon("depo")}</span></th>
+    <th class="sortable" id="tanggalGantiHeader">Tanggal Ganti Shift <span class="sort-icon">${sortIcon("tanggal")}</span></th>
     <th>Shift</th>
     <th>Nama Pengganti</th>
     <th>Shift Pengganti</th>
   </tr></thead><tbody>`;
 
-  // Kalau sedang diurutkan berdasarkan Depo, jangan urutkan ulang berdasarkan tanggal submit
-  const sortedRows = depoSortDir ? rows : rows.slice().sort((a,b) => new Date(b["Submitted at"]) - new Date(a["Submitted at"]));
+  // Kalau sedang diurutkan berdasarkan Depo/Tanggal, jangan urutkan ulang berdasarkan tanggal submit
+  const sortedRows = tsSortColumn ? rows : rows.slice().sort((a,b) => new Date(b["Submitted at"]) - new Date(a["Submitted at"]));
 
   sortedRows.forEach((row, i) => {
       html += `<tr>
         <td class="nama-cell" data-row-index="${i}">${row["Nama staff yang tukar shiff"] || "-"}</td>
         <td>${row["Depo"] || "-"}</td>
         <td>${row["Tanggal ganti shift"] || "-"}</td>
-        <td>${row["Shift Lama"] || "-"} &rarr; ${row["Shift Baru"] || "-"}</td>
+        <td>${shiftLamaValue(row) || "-"} &rarr; ${row["Shift Baru"] || "-"}</td>
         <td>${row["Nama Staff pengganti"] || "-"}</td>
         <td>${row["Shiff lama (P)"] || "-"} &rarr; ${row["Shiff baru(P)"] || "-"}</td>
       </tr>`;
@@ -652,16 +672,26 @@ function renderTukarShiftTable(container){
     });
   });
 
-  const depoHeader = document.getElementById("depoHeader");
-  if (depoHeader){
-    depoHeader.addEventListener("click", () => {
-      // siklus: asal -> A-Z -> Z-A -> asal
-      if (depoSortDir === null) depoSortDir = "asc";
-      else if (depoSortDir === "asc") depoSortDir = "desc";
-      else depoSortDir = null;
+  function attachSort(headerId, kolom){
+    const header = document.getElementById(headerId);
+    if (!header) return;
+    header.addEventListener("click", () => {
+      // siklus: asal -> A-Z/terlama -> Z-A/terbaru -> asal
+      if (tsSortColumn !== kolom){
+        tsSortColumn = kolom;
+        tsSortDir = "asc";
+      } else if (tsSortDir === "asc"){
+        tsSortDir = "desc";
+      } else {
+        tsSortColumn = null;
+        tsSortDir = null;
+      }
       renderTable();
     });
   }
+
+  attachSort("depoHeader", "depo");
+  attachSort("tanggalGantiHeader", "tanggal");
 }
 
 // ==== EVENT LISTENERS ====
@@ -681,6 +711,15 @@ document.getElementById("filterTahun").addEventListener("change", () => {
 document.getElementById("filterBulan").addEventListener("change", () => {
   updateCounts();
   renderTable();
+});
+
+let filterNamaTimeout = null;
+document.getElementById("filterNama").addEventListener("input", () => {
+  clearTimeout(filterNamaTimeout);
+  filterNamaTimeout = setTimeout(() => {
+    updateCounts();
+    renderTable();
+  }, 200);
 });
 
 loadData();
