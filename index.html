@@ -387,6 +387,16 @@ function parseDate(value){
   return isNaN(d.getTime()) ? null : d;
 }
 
+// Format tanggal menjadi dd/mmmm/yyyy (mis. 07/Agustus/2026), tanpa keterangan jam.
+function formatTanggal(value){
+  const d = parseDate(value);
+  if (!d) return value || "-";
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mmmm = BULAN_LIST[d.getMonth()];
+  const yyyy = d.getFullYear();
+  return `${dd}/${mmmm}/${yyyy}`;
+}
+
 // Tanggal acuan untuk filter tahun/bulan, berbeda-beda per kategori
 function getTanggalAcuan(row){
   if (row["Jenis Formulir"] === "Absensi Eror") return row["Tanggal Absensi"];
@@ -493,19 +503,19 @@ function renderPengajuanTable(container, kategori){
         <td>${row["NIP"] || "-"}</td>`;
       if (isTelat){
         html += `
-          <td>${row["Tanggal Mulai"] || "-"}</td>
+          <td>${formatTanggal(row["Tanggal Mulai"])}</td>
           <td>${row["Jenis (Telat/Pulang Cepat)"] === "telat" ? "Telat" : "Pulang cepat"}</td>
           <td>${row["Jam"] || "-"}</td>
           <td class="wrap-text">${row["Keterangan"] || "-"}</td>`;
       } else if (isAbsensiEror){
         html += `
-          <td>${row["Tanggal Absensi"] || "-"}</td>
+          <td>${formatTanggal(row["Tanggal Absensi"])}</td>
           <td>${row["Waktu Absensi (Masuk/Pulang)"] || "-"}</td>
           <td class="wrap-text">${row["Keterangan"] || "-"}</td>`;
       } else {
         html += `
-          <td>${row["Tanggal Mulai"] || "-"}</td>
-          <td>${row["Tanggal Selesai"] || "-"}</td>
+          <td>${formatTanggal(row["Tanggal Mulai"])}</td>
+          <td>${formatTanggal(row["Tanggal Selesai"])}</td>
           <td class="wrap-text">${row["Keterangan"] || "-"}</td>`;
       }
       html += `</tr>`;
@@ -531,10 +541,9 @@ const KATEGORI_WARNA_CLASS = {
   "Absensi Eror": "warna-absensieror"
 };
 
+// "Dikirim pada" sekarang hanya menampilkan tanggal (tanpa jam), format dd/mmmm/yyyy
 function formatTimestamp(value){
-  const d = parseDate(value);
-  if (!d) return "-";
-  return d.toLocaleString("id-ID", { day:"numeric", month:"long", year:"numeric", hour:"2-digit", minute:"2-digit" });
+  return formatTanggal(value);
 }
 
 function showDetailModal(row, kategori){
@@ -555,17 +564,17 @@ function showDetailModal(row, kategori){
   addRow("Nama", row["Nama"]);
 
   if (kategori === "Telat/Pulang Cepat"){
-    addRow("Tanggal", row["Tanggal Mulai"]);
+    addRow("Tanggal", formatTanggal(row["Tanggal Mulai"]));
     addRow("Jenis", row["Jenis (Telat/Pulang Cepat)"] === "telat" ? "Telat" : "Pulang cepat");
     addRow("Jam", row["Jam"]);
     addRow("Alasan", row["Keterangan"]);
   } else if (kategori === "Absensi Eror"){
-    addRow("Tanggal Absensi", row["Tanggal Absensi"]);
+    addRow("Tanggal Absensi", formatTanggal(row["Tanggal Absensi"]));
     addRow("Waktu Absensi", row["Waktu Absensi (Masuk/Pulang)"]);
     addRow("Kendala", row["Keterangan"]);
   } else {
-    addRow("Tanggal Mulai", row["Tanggal Mulai"]);
-    addRow("Tanggal Selesai", row["Tanggal Selesai"]);
+    addRow("Tanggal Mulai", formatTanggal(row["Tanggal Mulai"]));
+    addRow("Tanggal Selesai", formatTanggal(row["Tanggal Selesai"]));
     addRow("Keterangan", row["Keterangan"]);
   }
 
@@ -596,7 +605,7 @@ function showTukarShiftModal(row){
   addRow("Nama Pemohon", row["Nama staff yang tukar shiff"]);
   addRow("Depo", row["Depo"]);
   addRow("Tahun / Bulan", `${row["Tahun"] || "-"} / ${row["Bulan"] || "-"}`);
-  addRow("Tanggal Ganti Shift", row["Tanggal ganti shift"]);
+  addRow("Tanggal Ganti Shift", formatTanggal(row["Tanggal ganti shift"]));
   addRow("Shift Lama → Baru", `${shiftLamaValue(row) || "-"} → ${row["Shift Baru"] || "-"}`);
   addRow("Nama Staff Pengganti", row["Nama Staff pengganti"]);
   addRow("Shift Pengganti (Lama → Baru)", `${row["Shiff lama (P)"] || "-"} → ${row["Shiff baru(P)"] || "-"}`);
@@ -655,7 +664,7 @@ function renderTukarShiftTable(container){
       html += `<tr>
         <td class="nama-cell" data-row-index="${i}">${row["Nama staff yang tukar shiff"] || "-"}</td>
         <td>${row["Depo"] || "-"}</td>
-        <td>${row["Tanggal ganti shift"] || "-"}</td>
+        <td>${formatTanggal(row["Tanggal ganti shift"])}</td>
         <td>${shiftLamaValue(row) || "-"} &rarr; ${row["Shift Baru"] || "-"}</td>
         <td>${row["Nama Staff pengganti"] || "-"}</td>
         <td>${row["Shiff lama (P)"] || "-"} &rarr; ${row["Shiff baru(P)"] || "-"}</td>
