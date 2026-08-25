@@ -32,20 +32,17 @@
     font-family:'Inter',sans-serif;
     line-height:1.5;
   }
-  /* WRAP – benar-benar full, tanpa padding */
   .wrap{
     width:100%;
     max-width:100% !important;
     margin:0;
     padding:0 !important;
-    /* background: #ffdddd; */ /* (opsional untuk test) */
   }
-  /* Brand tetap dengan padding kecil agar tidak menempel */
   .brand{
     display:flex;
     align-items:center;
     gap:12px;
-    padding:20px 16px 0 16px; /* beri ruang di kiri-kanan */
+    padding:20px 16px 0 16px;
     margin-bottom:16px;
   }
   .brand svg{flex-shrink:0;}
@@ -59,11 +56,10 @@
   }
   .brand p{margin:2px 0 0;font-size:13px;color:var(--muted);}
 
-  /* CARD – full lebar, tanpa margin horizontal */
   .card{
     background:#fff;
     border:1px solid var(--border);
-    border-radius:0; /* opsional: hilangkan radius agar lebih full */
+    border-radius:0;
     padding:20px 16px;
     margin:0 0 16px 0;
     width:100%;
@@ -124,7 +120,6 @@
   .chip.active .count{background:rgba(255,255,255,0.25);color:#fff;}
   .chip:hover{border-color:var(--green-500);}
 
-  /* Tabel – full */
   .table-wrap{
     max-height:520px;
     overflow:auto;
@@ -153,6 +148,16 @@
     padding:10px 14px;
     border-bottom:1px solid var(--border);
     white-space:nowrap;
+    cursor:pointer; /* menandakan bisa diklik */
+  }
+  tbody td:first-child {
+    color: var(--green-700);
+    font-weight:500;
+    text-decoration:underline;
+    cursor:pointer;
+  }
+  tbody td:first-child:hover {
+    color: var(--green-500);
   }
   tbody td.wrap-text{white-space:normal;min-width:200px;}
   tbody tr:hover{background:var(--green-050);}
@@ -169,6 +174,88 @@
     text-align:center;
     color:var(--muted);
     font-size:13px;
+  }
+
+  /* ===== MODAL ===== */
+  .modal-overlay {
+    position: fixed;
+    top:0; left:0; width:100%; height:100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity:0;
+    visibility:hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+  }
+  .modal-overlay.active {
+    opacity:1;
+    visibility:visible;
+  }
+  .modal-card {
+    background:#fff;
+    border-radius:16px;
+    max-width:600px;
+    width:90%;
+    max-height:80vh;
+    overflow-y:auto;
+    padding:24px 28px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.3);
+    position:relative;
+  }
+  .modal-card h2 {
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:20px;
+    margin:0 0 16px 0;
+    color:var(--green-800);
+    border-bottom:2px solid var(--green-100);
+    padding-bottom:10px;
+  }
+  .modal-close {
+    position:absolute;
+    top:16px; right:20px;
+    font-size:24px;
+    background:none;
+    border:none;
+    color:var(--muted);
+    cursor:pointer;
+    padding:4px 10px;
+    border-radius:6px;
+    transition:background 0.15s;
+  }
+  .modal-close:hover {
+    background:var(--green-050);
+    color:var(--ink);
+  }
+  .modal-detail-item {
+    display:flex;
+    padding:8px 0;
+    border-bottom:1px solid var(--border);
+  }
+  .modal-detail-item:last-child {
+    border-bottom:none;
+  }
+  .modal-detail-label {
+    font-weight:600;
+    width:40%;
+    flex-shrink:0;
+    color:var(--muted);
+    font-size:13px;
+  }
+  .modal-detail-value {
+    font-weight:500;
+    width:60%;
+    color:var(--ink);
+    font-size:13px;
+    word-break:break-word;
+  }
+
+  @media (max-width: 600px) {
+    .modal-card { padding:20px 16px; }
+    .modal-detail-label { width:35%; }
+    .modal-detail-value { width:65%; }
   }
 
   /* Responsif tetap */
@@ -224,6 +311,15 @@
     </div>
   </div>
 
+</div>
+
+<!-- MODAL DETAIL -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal-card">
+    <button class="modal-close" id="modalClose">&times;</button>
+    <h2>Detail Pengajuan</h2>
+    <div id="modalBody"></div>
+  </div>
 </div>
 
 <script>
@@ -323,6 +419,8 @@ function renderTable(){
   } else {
     renderPengajuanTable(container, currentKategori);
   }
+  // Pasang event listener untuk klik nama staff
+  attachRowListeners();
 }
 
 function renderPengajuanTable(container, kategori){
@@ -340,7 +438,10 @@ function renderPengajuanTable(container, kategori){
   }
   html += `</tr></thead><tbody>`;
   rows.sort((a,b) => new Date(b["Timestamp"]) - new Date(a["Timestamp"])).forEach(row => {
-    html += `<tr><td>${row["Nama"] || "-"}</td><td>${row["NIP"] || "-"}</td>`;
+    // Simpan seluruh data row ke atribut data-row
+    const dataAttr = encodeURIComponent(JSON.stringify(row));
+    html += `<tr data-row="${dataAttr}">`;
+    html += `<td>${row["Nama"] || "-"}</td><td>${row["NIP"] || "-"}</td>`;
     if (isTelat){
       html += `<td>${row["Tanggal Mulai"] || "-"}</td><td>${row["Jenis (Telat/Pulang Cepat)"] === "telat" ? "Telat" : "Pulang cepat"}</td><td>${row["Jam"] || "-"}</td><td class="wrap-text">${row["Keterangan"] || "-"}</td>`;
     } else {
@@ -360,11 +461,68 @@ function renderTukarShiftTable(container){
   }
   let html = `<table><thead><tr><th>Nama Pemohon</th><th>Depo</th><th>Tanggal Ganti Shift</th><th>Shift</th><th>Nama Pengganti</th><th>Shift Pengganti</th></tr></thead><tbody>`;
   rows.sort((a,b) => new Date(b["Submitted at"]) - new Date(a["Submitted at"])).forEach(row => {
-    html += `<tr><td>${row["Nama staff yang tukar shiff"] || "-"}</td><td>${row["Depo"] || "-"}</td><td>${row["Tanggal ganti shift"] || "-"}</td><td>${row["Shift Lama"] || "-"} &rarr; ${row["Shift Baru"] || "-"}</td><td>${row["Nama Staff pengganti"] || "-"}</td><td>${row["Shiff lama (P)"] || "-"} &rarr; ${row["Shiff baru(P)"] || "-"}</td></tr>`;
+    const dataAttr = encodeURIComponent(JSON.stringify(row));
+    html += `<tr data-row="${dataAttr}">`;
+    html += `<td>${row["Nama staff yang tukar shiff"] || "-"}</td><td>${row["Depo"] || "-"}</td><td>${row["Tanggal ganti shift"] || "-"}</td><td>${row["Shift Lama"] || "-"} &rarr; ${row["Shift Baru"] || "-"}</td><td>${row["Nama Staff pengganti"] || "-"}</td><td>${row["Shiff lama (P)"] || "-"} &rarr; ${row["Shiff baru(P)"] || "-"}</td>`;
+    html += `</tr>`;
   });
   html += `</tbody></table>`;
   container.innerHTML = html;
 }
+
+// ===== FUNGSI UNTUK POP-UP DETAIL =====
+function attachRowListeners() {
+  const container = document.getElementById("tableContent");
+  // Hanya jika ada tabel
+  const rows = container.querySelectorAll("tr[data-row]");
+  rows.forEach(tr => {
+    // Kita pasang listener pada seluruh baris, atau hanya pada td pertama (nama)
+    // Agar lebih user friendly, kita pasang pada td pertama (nama)
+    const firstTd = tr.querySelector("td:first-child");
+    if (firstTd) {
+      firstTd.addEventListener("click", function(e) {
+        e.stopPropagation();
+        const dataStr = tr.getAttribute("data-row");
+        if (dataStr) {
+          try {
+            const data = JSON.parse(decodeURIComponent(dataStr));
+            showDetail(data);
+          } catch(err) {
+            console.error("Gagal parsing data", err);
+          }
+        }
+      });
+    }
+  });
+}
+
+function showDetail(data) {
+  const modal = document.getElementById("detailModal");
+  const body = document.getElementById("modalBody");
+  // Buat daftar item
+  let html = '';
+  for (const [key, value] of Object.entries(data)) {
+    if (value === undefined || value === null) continue;
+    const displayValue = String(value).trim() || '-';
+    html += `<div class="modal-detail-item">
+      <span class="modal-detail-label">${key}</span>
+      <span class="modal-detail-value">${displayValue}</span>
+    </div>`;
+  }
+  body.innerHTML = html;
+  modal.classList.add("active");
+}
+
+// Tutup modal
+document.getElementById("modalClose").addEventListener("click", function() {
+  document.getElementById("detailModal").classList.remove("active");
+});
+// Tutup dengan klik di luar modal
+document.getElementById("detailModal").addEventListener("click", function(e) {
+  if (e.target === this) {
+    this.classList.remove("active");
+  }
+});
 
 document.querySelectorAll(".chip").forEach(chip => {
   chip.addEventListener("click", () => {
